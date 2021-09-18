@@ -1,0 +1,16 @@
+==== Blueqat ====
+TIME_ADD: 1.846 sec
+TIME_SUB: 1.719 sec
+TIME_MODULOADD: 34.623 sec
+==== Cirq ====
+TIME_ADD: 49.281 sec
+TIME_SUB: 49.234 sec
+TIME_MODULOADD: 388.213 sec
+==== Qiskit ====
+TIME_ADD: 0.204 sec
+TIME_SUB: 0.130 sec
+TIME_MODULOADD: 0.943 sec
+==== SymPy ====
+TIME_ADD: 199.545 sec
+TIME_SUB: 199.848 sec
+TIME_MODULOADD: 430.502 sec
