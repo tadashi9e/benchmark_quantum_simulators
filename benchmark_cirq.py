@@ -378,6 +378,7 @@ class Integer(object):
                 t += a0
                 Integer.cswap(self.qbits[i], other, a0)
                 results.append(t.rshift())
+            a0.deallocate()
             return Integer(results + t.qbits, len(self.qbits) * 2)
     def bit_indices(self) -> List[int]:
         bs = []
