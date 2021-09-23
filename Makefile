@@ -1,13 +1,13 @@
 
 summary.txt: benchmark_blueqat.txt benchmark_cirq.txt benchmark_qiskit.txt benchmark_sympy.txt
 	(echo '==== Blueqat ====' && \
-	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD' benchmark_blueqat.txt && \
+	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD|TIME_MUL' benchmark_blueqat.txt && \
 	echo '==== Cirq ====' && \
-	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD' benchmark_cirq.txt && \
+	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD|TIME_MUL' benchmark_cirq.txt && \
 	echo '==== Qiskit ====' && \
-	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD' benchmark_qiskit.txt && \
+	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD|TIME_MUL' benchmark_qiskit.txt && \
 	echo '==== SymPy ====' && \
-	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD' benchmark_sympy.txt \
+	 egrep 'TIME_ADD|TIME_SUB|TIME_MODULOADD|TIME_MUL' benchmark_sympy.txt \
 	) > summary.txt
 
 benchmark_blueqat.txt: benchmark_blueqat.py

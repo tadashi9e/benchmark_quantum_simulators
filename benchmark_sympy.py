@@ -6,7 +6,7 @@ import sys
 import time
 
 from types import TracebackType
-from typing import List, Optional, Set, Type
+from typing import List, Optional, Set, Type, Union
 
 def CCNOT(c1: int, c2: int, q: int) -> sympy.physics.quantum.gate.Gate:
     return sympy.physics.quantum.gate.CGate(
@@ -260,17 +260,35 @@ class Sum(UnitaryOperation):
                 str(self.a), str(self.b), str(self.c)))
 class Integer(object):
     NBITS = 4
-    def __init__(self, n: int) -> None:
-        nbits = Integer.NBITS
-        self.qbits = [QBit() for _ in range(nbits)]
-        self.cs : Optional[List[QBit]] = None
+    def __init__(self, n: Union['Integer', List[QBit], int],
+                 nbits: int = -1) -> None:
+        if nbits < 0:
+            nbits = Integer.NBITS
         self._carry : Optional[QBit] = None
-        if n != 0:
-            with UO_Proc('Integer.init') as p:
-                for i in range(0, nbits):
-                    if n & (1 << i) == 0:
-                        continue
-                    QBit.x(self.qbits[i])
+        self.qbits: List[QBit] = []
+        if isinstance(n, Integer):
+            self._carry = n._carry
+            self.qbits = n.qbits
+            self.set_nbits(nbits)
+        elif isinstance(n, list):
+            self.qbits = n
+            self.set_nbits(nbits)
+        elif isinstance(n, int):
+            self.qbits = [QBit() for _ in range(nbits)]
+            if n != 0:
+                with UO_Proc('Integer.init') as p:
+                    for i in range(nbits):
+                        if n & (1 << i) == 0:
+                            continue
+                        QBit.x(self.qbits[i])
+        self.cs : Optional[List[QBit]] = None
+    def set_nbits(self, nbits: int) -> None:
+        if len(self.qbits) < nbits:
+            self.qbits += [QBit() for _ in range(nbits - len(self.qbits))]
+        if len(self.qbits) > nbits:
+            self.qbits = self.qbits.copy()[:nbits]
+    def nbits(self) -> int:
+        return len(self.qbits)
     def deallocate(self) -> None:
         [c.deallocate() for c in self.qbits]
     def _deallocate(self) -> None:
@@ -347,6 +365,29 @@ class Integer(object):
                 QBit.cswap(c, a._carry, b.carry())
             elif b._carry is not None:
                 QBit.cswap(c, a.carry(), b._carry)
+    def rshift(self) -> QBit:
+        lsb = self.qbits[0]
+        self.qbits = self.qbits[1:]
+        if self._carry is None:
+            msb = QBit()
+        else:
+            msb = self._carry
+            self._carry = None
+        self.qbits += [msb]
+        return lsb
+    def __mul__(self, other: 'Integer') -> 'Integer':
+        if len(self.qbits) != len(other.qbits):
+            raise RuntimeError('invalid Integer bit width')
+        with UO_Proc('Integer.mul'):
+            a0 = Integer(0, nbits=len(self.qbits))
+            results: List[QBit] = []
+            t = Integer(0, nbits=len(self.qbits))
+            for i in range(len(self.qbits)):
+                Integer.cswap(self.qbits[i], other, a0)
+                t += a0
+                Integer.cswap(self.qbits[i], other, a0)
+                results.append(t.rshift())
+            return Integer(results + t.qbits, len(self.qbits) * 2)
     def bit_indices(self) -> List[int]:
         bs = []
         for i in range(0, len(self.qbits)):
@@ -541,3 +582,53 @@ with TestProc_MODULOADD() as p:
             sys.exit(1)
     end = time.perf_counter()
     print('TIME_MODULOADD: {0:.3f} sec'.format(end-start))
+reset_all()
+
+# ----------------------------------------------------------------------
+class TestMul(UO_Proc):
+    def __init__(self, nbits: int = Integer.NBITS) -> None:
+        UO_Proc.__init__(self, 'TestMul')
+        self.nbits = nbits
+    def __enter__(self) -> 'TestMul':
+        UO_Proc.__enter__(self)
+        Integer.NBITS = 4
+        a = Integer(0, nbits=self.nbits)
+        b = Integer(0, nbits=self.nbits)
+        a.hadamard()
+        b.hadamard()
+        self.a = a
+        self.b = b
+        self.c = a * b
+        return self
+with TestMul() as p_mul:
+    print('---- circuit ----')
+    print(str(p_mul))
+    print('a =' + str(p_mul.a))
+    print('b =' + str(p_mul.b))
+    print('c =' + str(p_mul.c))
+    print('---- simulator ----')
+    circuit = p_mul.synthesis(
+        sympy.physics.quantum.qubit.Qubit('0' * (get_max_qbit_index() + 1)))
+    print(str(circuit))
+    print('---- result ----')
+    start = time.perf_counter()
+    expr = sympy.physics.quantum.qapply(circuit)
+    results = sympy.physics.quantum.qubit.measure_all(expr)
+    for _ in range(10):
+        result = str(random.choice(results)[0])
+        a = p_mul.a.parse(result)
+        b = p_mul.b.parse(result)
+        c = p_mul.c.parse(result)
+        print('a={0}[{1}]'.format(a, str(p_mul.a)))
+        print('b={0}[{1}]'.format(b, str(p_mul.b)))
+        print('c={0}[{1}]'.format(c, str(p_mul.c)))
+        if c == a * b:
+            print('{0} OK {1}*{2}={3}'.format(result,
+                                              a, b, c))
+        else:
+            print('{0} NG {1}*{2}={3}'.format(result,
+                                              a, b, c))
+            sys.exit(1)
+        reset_all()
+    end = time.perf_counter()
+    print('TIME_MUL: {0:.3f} sec'.format(end-start))
