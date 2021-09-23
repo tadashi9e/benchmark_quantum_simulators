@@ -9,10 +9,10 @@ Target simulators are:
 - SymPy
 
 Benchmark circuits are:
-- TIME_ADD - Execution time of quantum adder circuit
-- TIME_SUB - Execution time of quantum subtractor circuit
-- TIME_MUL - Execution time of quantum multiplier circuit
-- TIME_MODULOADD - Execution time of quantum modulo-adder circuit
+- TIME_ADD - Execution time of quantum adder circuit (4bit + 4bit = 5bit, measure 10 times)
+- TIME_SUB - Execution time of quantum subtractor circuit (4bit - 4bit = 5bit, measure 10 times)
+- TIME_MUL - Execution time of quantum multiplier circuit (3bit * 3bit = 6bit, measure 10 times)
+- TIME_MODULOADD - Execution time of quantum modulo-adder circuit (3bit + 3bit mod 3bit = 4bit, measure 10 times)
 
 For SymPy, I emulated 'measure' operation by using random-choice of 'measure_all' results.
 

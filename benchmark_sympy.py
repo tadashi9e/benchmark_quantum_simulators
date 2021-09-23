@@ -585,13 +585,13 @@ with TestProc_MODULOADD() as p:
 reset_all()
 
 # ----------------------------------------------------------------------
+Integer.NBITS = 3
 class TestMul(UO_Proc):
     def __init__(self, nbits: int = Integer.NBITS) -> None:
         UO_Proc.__init__(self, 'TestMul')
         self.nbits = nbits
     def __enter__(self) -> 'TestMul':
         UO_Proc.__enter__(self)
-        Integer.NBITS = 4
         a = Integer(0, nbits=self.nbits)
         b = Integer(0, nbits=self.nbits)
         a.hadamard()
